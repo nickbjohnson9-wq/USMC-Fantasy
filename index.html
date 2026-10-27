@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Official League Record</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1C1B17;
+    --parchment:#EFE6D2;
+    --pine:#152119;
+    --pine-light:#20332A;
+    --pine-line: rgba(239,230,210,0.14);
+    --gold:#C79A3B;
+    --gold-bright:#E0B75B;
+    --stamp:#9C3226;
+    --stamp-dark:#7A2419;
+    --win:#8FBF8A;
+    --loss:#D48A7A;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--pine);
+    color:var(--parchment);
+    font-family:'Source Serif 4', serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{
+    font-family:'Oswald', sans-serif;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    margin:0;
+  }
+  .wrap{ max-width:1040px; margin:0 auto; padding:0 24px; }
+
+  .grain{
+    position:fixed; inset:0; pointer-events:none; z-index:1; opacity:0.05; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ---------- hero ---------- */
+  header.hero{
+    position:relative;
+    padding:88px 0 64px;
+    border-bottom:1px solid var(--pine-line);
+    text-align:center;
+    overflow:hidden;
+  }
+  header.hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background: radial-gradient(ellipse at 50% -10%, rgba(199,154,59,0.16), transparent 60%);
+  }
+  .eyebrow{
+    position:relative;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px; letter-spacing:0.28em; color:var(--gold-bright);
+    text-transform:uppercase; margin-bottom:18px;
+  }
+  .eyebrow::before, .eyebrow::after{ content:"\2014"; margin:0 10px; opacity:0.6; }
+  .hero h1{
+    position:relative;
+    font-size:clamp(38px, 8vw, 68px);
+    font-weight:700; line-height:1.02; color:var(--parchment);
+  }
+  .hero h1 span{ display:block; color:var(--gold); font-size:0.42em; margin-top:14px; letter-spacing:0.15em; }
+  .hero .sub{
+    position:relative; font-style:italic; color:rgba(239,230,210,0.65);
+    max-width:540px; margin:22px auto 0; font-size:16px;
+  }
+  .hero .facts{ position:relative; display:flex; justify-content:center; gap:36px; margin-top:40px; flex-wrap:wrap; }
+  .hero .facts div{ text-align:center; }
+  .hero .facts .num{ font-family:'IBM Plex Mono',monospace; font-size:26px; color:var(--gold-bright); font-weight:600; }
+  .hero .facts .lbl{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:rgba(239,230,210,0.5); margin-top:4px; }
+
+  section{ padding:76px 0; border-bottom:1px solid var(--pine-line); }
+  .section-head{ text-align:center; margin-bottom:48px; }
+  .section-head .kicker{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.24em; color:var(--gold-bright); text-transform:uppercase; margin-bottom:10px; }
+  .section-head h2{ font-size:clamp(26px,4.5vw,38px); color:var(--parchment); }
+  .section-head p{ color:rgba(239,230,210,0.55); max-width:520px; margin:14px auto 0; font-size:15px; }
+
+  .reveal{ opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+  @media (prefers-reduced-motion: reduce){ .reveal{ opacity:1; transform:none; transition:none; } }
+
+  /* ---------- champions ---------- */
+  .champ-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(290px, 1fr)); gap:28px; }
+  .champ-card{
+    background:var(--parchment); color:var(--ink);
+    border-radius:2px; padding:34px 30px 30px; position:relative;
+    box-shadow:0 18px 40px rgba(0,0,0,0.35); overflow:hidden;
+  }
+  .champ-card::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:6px;
+    background:repeating-linear-gradient(90deg, var(--stamp) 0 14px, transparent 14px 20px); opacity:0.6;
+  }
+  .champ-card.pending{ background:transparent; color:var(--parchment); border:2px dashed rgba(224,183,91,0.45); box-shadow:none; }
+  .champ-card.pending::before{ display:none; }
+  .champ-year{ font-family:'IBM Plex Mono',monospace; font-size:13px; letter-spacing:0.16em; color:var(--stamp); font-weight:600; }
+  .pending .champ-year{ color:var(--gold-bright); }
+  .champ-team{ font-family:'Oswald',sans-serif; font-size:clamp(24px,3.6vw,30px); font-weight:600; text-transform:uppercase; margin:8px 0 2px; line-height:1.08; padding-right:70px; overflow-wrap:break-word; }
+  .pending .champ-team{ font-size:21px; padding-right:64px; }
+  .champ-owner{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#5c5540; }
+  .pending .champ-owner{ color:rgba(239,230,210,0.55); }
+  .champ-stats{ display:flex; gap:24px; margin-top:20px; padding-top:18px; border-top:1px dashed #b9ab82; }
+  .pending .champ-stats{ border-top-color:rgba(239,230,210,0.25); }
+  .champ-stats .v{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:19px; }
+  .champ-stats .l{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:#7a7150; margin-top:2px; }
+  .pending .champ-stats .l{ color:rgba(239,230,210,0.5); }
+  .champ-note{ margin-top:16px; font-size:14px; font-style:italic; color:#4a4432; }
+  .pending .champ-note{ color:rgba(239,230,210,0.65); }
+  .stamp-seal{
+    position:absolute; top:26px; right:18px; width:76px; height:76px;
+    border:3px solid var(--stamp); border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    transform:rotate(-14deg); color:var(--stamp);
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:10px; letter-spacing:0.06em;
+    text-align:center; line-height:1.15; opacity:0.88;
+  }
+  .stamp-seal::before{ content:""; position:absolute; inset:5px; border:1px solid var(--stamp); border-radius:50%; }
+  .pending .stamp-seal{ color:var(--gold-bright); border-color:var(--gold); }
+  .pending .stamp-seal::before{ border-color:var(--gold); }
+
+  /* ---------- ledger tables ---------- */
+  .tablewrap{ overflow-x:auto; }
+  .ledger{ width:100%; border-collapse:collapse; font-family:'IBM Plex Mono',monospace; font-size:13.5px; min-width:640px; }
+  .ledger thead th{
+    text-align:left; padding:0 10px 12px; font-size:10.5px; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--gold-bright); border-bottom:1px solid var(--pine-line); font-weight:600; white-space:nowrap;
+  }
+  .ledger td{ padding:13px 10px; border-bottom:1px solid var(--pine-line); vertical-align:middle; }
+  .ledger tbody tr{ transition:background .2s; }
+  .ledger tbody tr:hover{ background:rgba(199,154,59,0.06); }
+  .ledger tr.muted td{ opacity:0.62; }
+  .rank{ color:var(--gold-bright); font-weight:600; width:28px; }
+  .team-cell .nm{ font-family:'Oswald',sans-serif; text-transform:uppercase; font-size:14.5px; letter-spacing:0.02em; color:var(--parchment); }
+  .team-cell .ow{ font-size:11px; color:rgba(239,230,210,0.45); margin-top:1px; }
+  .diff-pos{ color:var(--win); }
+  .diff-neg{ color:var(--loss); }
+  .num-cell{ text-align:right; white-space:nowrap; }
+  .ledger th.num-cell{ text-align:right; }
+  .medal{ font-size:12.5px; white-space:nowrap; }
+  .badge{
+    display:inline-block; margin-left:8px; padding:1px 6px; border-radius:2px; vertical-align:2px;
+    font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.1em; font-weight:600;
+  }
+  .badge.new{ background:var(--gold); color:var(--pine); }
+  .badge.former{ border:1px solid rgba(239,230,210,0.4); color:rgba(239,230,210,0.7); }
+  .form-cell{ white-space:nowrap; }
+  .pip{
+    display:inline-block; width:17px; height:17px; line-height:17px; text-align:center; margin-right:3px;
+    font-style:normal; font-size:9.5px; font-weight:600; border-radius:2px;
+  }
+  .pip.w{ background:rgba(143,191,138,0.2); color:var(--win); }
+  .pip.l{ background:rgba(212,138,122,0.18); color:var(--loss); }
+  tr.cutline td{ padding:0; border-bottom:none; }
+  tr.cutline span{
+    display:block; text-align:center; padding:6px 0; margin:2px 0;
+    border-top:1px dashed var(--gold); border-bottom:1px dashed var(--gold);
+    font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gold-bright);
+    background:rgba(199,154,59,0.07);
+  }
+  .tablenote{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:rgba(239,230,210,0.45); margin-top:14px; line-height:1.6; }
+
+  /* ---------- season files ---------- */
+  .season-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(290px, 1fr)); gap:28px; }
+  .season-card{ border:1px solid var(--pine-line); background:var(--pine-light); padding:28px 26px; border-radius:2px; }
+  .season-card.live{ border-color:rgba(224,183,91,0.5); }
+  .season-card .tab{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.18em; color:var(--gold-bright); display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .season-card h3{ font-size:22px; color:var(--parchment); margin-bottom:16px; }
+  .placement{ list-style:none; margin:0; padding:0; }
+  .placement li{ display:grid; grid-template-columns:34px 1fr auto; gap:10px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--pine-line); font-size:13.5px; }
+  .placement li:last-child{ border-bottom:none; }
+  .p-rank{ font-family:'IBM Plex Mono',monospace; color:var(--gold-bright); font-size:12px; }
+  .p-team{ font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.02em; font-size:13.5px; }
+  .p-rec{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:rgba(239,230,210,0.55); }
+  .season-blurb{ margin-top:18px; font-size:14px; font-style:italic; color:rgba(239,230,210,0.65); padding-top:16px; border-top:1px dashed var(--pine-line); }
+
+  /* ---------- awards ---------- */
+  .award-grid{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media(max-width:680px){ .award-grid{ grid-template-columns:1fr; } }
+  .award-card{ background:var(--parchment); color:var(--ink); padding:24px 24px 22px; border-radius:2px; box-shadow:0 12px 26px rgba(0,0,0,0.28); }
+  .award-card .tag{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--stamp); font-weight:600; }
+  .award-card h4{ font-size:19px; margin:8px 0 10px; color:var(--ink); letter-spacing:0.01em; }
+  .award-card .who{ font-family:'IBM Plex Mono',monospace; font-size:13px; color:#4a4432; margin-bottom:8px; }
+  .award-card .stat-line{ font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:600; color:var(--stamp-dark); }
+  .award-card p.blurb{ font-size:13.5px; color:#5c5540; margin:10px 0 0; }
+
+  footer{ padding:56px 0 70px; text-align:center; }
+  .seal{
+    width:74px; height:74px; margin:0 auto 18px; border:2px solid var(--gold); border-radius:50%;
+    display:flex; align-items:center; justify-content:center; position:relative;
+    color:var(--gold-bright); font-family:'Oswald',sans-serif; font-size:9px; letter-spacing:0.08em; text-align:center; line-height:1.2;
+  }
+  .seal::before{ content:""; position:absolute; inset:5px; border:1px solid var(--gold); border-radius:50%; }
+  footer p{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:rgba(239,230,210,0.4); letter-spacing:0.04em; margin:0; }
+  footer .small{ margin-top:6px; font-size:10.5px; color:rgba(239,230,210,0.28); }
+
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Filed by the League Office</div>
+    <h1>The Official Record<span>Three Seasons &middot; Ten Franchises</span></h1>
+    <p class="sub">A certified account of every champion, every collapse, and every score on file &mdash; 2024 through Week&nbsp;7 of the 2026 season.</p>
+    <div class="facts">
+      <div><div class="num">2</div><div class="lbl">Seasons Complete</div></div>
+      <div><div class="num">7</div><div class="lbl">Weeks Played in 2026</div></div>
+      <div><div class="num">10</div><div class="lbl">Active Franchises</div></div>
+      <div><div class="num">2</div><div class="lbl">Champions Crowned</div></div>
+    </div>
+  </div>
+</header>
+
+<section id="champions">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="kicker">Exhibit A</div>
+      <h2>Hall of Champions</h2>
+      <p>Two titles issued to date. No repeat winners &mdash; and the 2026 race is still wide open.</p>
+    </div>
+    <div class="champ-grid">
+      <div class="champ-card reveal">
+        <div class="stamp-seal">CHAMPION<br>2024</div>
+        <div class="champ-year">2024 SEASON</div>
+        <div class="champ-team">Amon-YaMothasDaughter</div>
+        <div class="champ-owner">OWNER &mdash; yseeK</div>
+        <div class="champ-stats">
+          <div><div class="v">13&ndash;2</div><div class="l">Record</div></div>
+          <div><div class="v">2,295.14</div><div class="l">Reg. Season PF</div></div>
+          <div><div class="v">.867</div><div class="l">Win %</div></div>
+        </div>
+        <div class="champ-note">Led the league at 11-2 in the regular season, then went 2-0 in the playoffs, beating carterwharton in the final.</div>
+      </div>
+      <div class="champ-card reveal">
+        <div class="stamp-seal">CHAMPION<br>2025</div>
+        <div class="champ-year">2025 SEASON</div>
+        <div class="champ-team">Mahomies n I Hate Blaine</div>
+        <div class="champ-owner">OWNER &mdash; iTickleFatKidz (now JClark228)</div>
+        <div class="champ-stats">
+          <div><div class="v">13&ndash;2</div><div class="l">Record</div></div>
+          <div><div class="v">2,618.84</div><div class="l">Reg. Season PF</div></div>
+          <div><div class="v">.867</div><div class="l">Win %</div></div>
+        </div>
+        <div class="champ-note">Lost the 2024 third-place game, then posted the highest-scoring season on record (11-2) and beat Blainefry's Roger Goodell squad in the title game.</div>
+      </div>
+      <div class="champ-card pending reveal">
+        <div class="stamp-seal">2026<br>OPEN</div>
+        <div class="champ-year">2026 &middot; WEEK 7 LEADER</div>
+        <div class="champ-team">carterwharton</div>
+        <div class="champ-owner">6 straight wins &mdash; title not yet awarded</div>
+        <div class="champ-stats">
+          <div><div class="v">6&ndash;1</div><div class="l">Record</div></div>
+          <div><div class="v">1,043.70</div><div class="l">Points For</div></div>
+          <div><div class="v">6</div><div class="l">Weeks Left</div></div>
+        </div>
+        <div class="champ-note">Finished dead last (4-9) in 2025 and now sits atop the standings. Playoffs begin in Week 14.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="current">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="kicker">Exhibit B</div>
+      <h2>2026 Standings</h2>
+      <p>Through Week 7. Ranked by record, then points scored. The top four of ten make the playoffs.</p>
+    </div>
+    <div class="tablewrap reveal">
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Franchise</th>
+            <th class="num-cell">Record</th>
+            <th class="num-cell">Pts For</th>
+            <th class="num-cell">Pts Against</th>
+            <th class="num-cell">Diff</th>
+            <th>Form (Wk 1&rarr;7)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="rank">1</td>
+            <td class="team-cell"><div class="nm">carterwharton</div><div class="ow"></div></td>
+            <td class="num-cell">6–1</td>
+            <td class="num-cell">1,043.70</td>
+            <td class="num-cell">876.80</td>
+            <td class="num-cell diff-pos">+166.9</td>
+            <td class="form-cell"><i class="pip l">L</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip w">W</i></td>
+          </tr>
+          <tr>
+            <td class="rank">2</td>
+            <td class="team-cell"><div class="nm">NOSE TACKLE</div><div class="ow">Blainefry</div></td>
+            <td class="num-cell">5–2</td>
+            <td class="num-cell">1,191.42</td>
+            <td class="num-cell">1,081.20</td>
+            <td class="num-cell diff-pos">+110.2</td>
+            <td class="form-cell"><i class="pip w">W</i><i class="pip l">L</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip l">L</i><i class="pip w">W</i></td>
+          </tr>
+          <tr>
+            <td class="rank">3</td>
+            <td class="team-cell"><div class="nm">Outkast<span class="badge new">NEW ’26</span></div><div class="ow">Capehart36</div></td>
+            <td class="num-cell">5–2</td>
+            <td class="num-cell">1,050.84</td>
+            <td class="num-cell">1,016.40</td>
+            <td class="num-cell diff-pos">+34.4</td>
+            <td class="form-cell"><i class="pip l">L</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip l">L</i></td>
+          </tr>
+          <tr>
+            <td class="rank">4</td>
+            <td class="team-cell"><div class="nm">SharonCrabs<span class="badge new">NEW ’26</span></div><div class="ow"></div></td>
+            <td class="num-cell">4–3</td>
+            <td class="num-cell">1,111.80</td>
+            <td class="num-cell">987.62</td>
+            <td class="num-cell diff-pos">+124.2</td>
+            <td class="form-cell"><i class="pip w">W</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip w">W</i></td>
+          </tr>
+          <tr class="cutline"><td colspan="7"><span>playoff cut line · top 4 advance</span></td></tr>
+          <tr>
+            <td class="rank">5</td>
+            <td class="team-cell"><div class="nm">ScoobyDoobyRuby</div><div class="ow"></div></td>
+            <td class="num-cell">4–3</td>
+            <td class="num-cell">1,036.24</td>
+            <td class="num-cell">998.96</td>
+            <td class="num-cell diff-pos">+37.3</td>
+            <td class="form-cell"><i class="pip l">L</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip w">W</i></td>
+          </tr>
+          <tr>
+            <td class="rank">6</td>
+            <td class="team-cell"><div class="nm">DUIng blaines mom</div><div class="ow">JClark228 · fka iTickleFatKidz</div></td>
+            <td class="num-cell">3–4</td>
+            <td class="num-cell">1,148.74</td>
+            <td class="num-cell">1,112.50</td>
+            <td class="num-cell diff-pos">+36.2</td>
+            <td class="form-cell"><i class="pip w">W</i><i class="pip w">W</i><i class="pip l">L</i><i class="pip w">W</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip l">L</i></td>
+          </tr>
+          <tr>
+            <td class="rank">7</td>
+            <td class="team-cell"><div class="nm">markysharky123</div><div class="ow"></div></td>
+            <td class="num-cell">3–4</td>
+            <td class="num-cell">941.14</td>
+            <td class="num-cell">1,076.26</td>
+            <td class="num-cell diff-neg">−135.1</td>
+            <td class="form-cell"><i class="pip l">L</i><i class="pip w">W</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip w">W</i><i class="pip w">W</i><i class="pip l">L</i></td>
+          </tr>
+          <tr>
+            <td class="rank">8</td>
+            <td class="team-cell"><div class="nm">Pablo Sanchez</div><div class="ow">yseeK</div></td>
+            <td class="num-cell">2–5</td>
+            <td class="num-cell">1,029.12</td>
+            <td class="num-cell">1,070.44</td>
+            <td class="num-cell diff-neg">−41.3</td>
+            <td class="form-cell"><i class="pip l">L</i><i class="pip l">L</i><i class="pip w">W</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip w">W</i><i class="pip l">L</i></td>
+          </tr>
+          <tr>
+            <td class="rank">9</td>
+            <td class="team-cell"><div class="nm">DeloresBitesKneecaps<span class="badge new">NEW ’26</span></div><div class="ow">rl32</div></td>
+            <td class="num-cell">2–5</td>
+            <td class="num-cell">977.94</td>
+            <td class="num-cell">1,115.30</td>
+            <td class="num-cell diff-neg">−137.4</td>
+            <td class="form-cell"><i class="pip w">W</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip w">W</i></td>
+          </tr>
+          <tr>
+            <td class="rank">10</td>
+            <td class="team-cell"><div class="nm">Quadfather325</div><div class="ow"></div></td>
+            <td class="num-cell">1–6</td>
+            <td class="num-cell">891.16</td>
+            <td class="num-cell">1,086.62</td>
+            <td class="num-cell diff-neg">−195.5</td>
+            <td class="form-cell"><i class="pip w">W</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip l">L</i><i class="pip l">L</i></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="tablenote">Three new franchises joined this season (marked NEW). DaddyDrewsta did not return for 2026 and remains in the all-time records below.</p>
+    </div>
+  </div>
+</section>
+
+<section id="standings">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="kicker">Exhibit C</div>
+      <h2>All-Time Standings</h2>
+      <p>Combined record &mdash; regular season plus playoffs &mdash; across 2024, 2025 and 2026 through Week 7, ranked by win percentage with point differential breaking ties.</p>
+    </div>
+    <div class="tablewrap reveal">
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Franchise</th>
+            <th class="num-cell">Record</th>
+            <th class="num-cell">Win%</th>
+            <th class="num-cell">Pts For</th>
+            <th class="num-cell">Diff</th>
+            <th>Finishes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="rank">1</td>
+            <td class="team-cell"><div class="nm">Outkast<span class="badge new">NEW ’26</span></div><div class="ow">Capehart36</div></td>
+            <td class="num-cell">5–2</td>
+            <td class="num-cell">.714</td>
+            <td class="num-cell">1,050.8</td>
+            <td class="num-cell diff-pos">+34.4</td>
+            <td><span class="medal">#3 ’26</span></td>
+          </tr>
+          <tr>
+            <td class="rank">2</td>
+            <td class="team-cell"><div class="nm">DUIng blaines mom</div><div class="ow">JClark228 · fka iTickleFatKidz</div></td>
+            <td class="num-cell">25–12</td>
+            <td class="num-cell">.676</td>
+            <td class="num-cell">5,946.0</td>
+            <td class="num-cell diff-pos">+902.3</td>
+            <td><span class="medal">4th ’24 · 🏆 ’25 · #6 ’26</span></td>
+          </tr>
+          <tr>
+            <td class="rank">3</td>
+            <td class="team-cell"><div class="nm">Pablo Sanchez</div><div class="ow">yseeK</div></td>
+            <td class="num-cell">22–15</td>
+            <td class="num-cell">.595</td>
+            <td class="num-cell">5,333.4</td>
+            <td class="num-cell diff-pos">+175.7</td>
+            <td><span class="medal">🏆 ’24 · 4th ’25 · #8 ’26</span></td>
+          </tr>
+          <tr>
+            <td class="rank">4</td>
+            <td class="team-cell"><div class="nm">SharonCrabs<span class="badge new">NEW ’26</span></div><div class="ow"></div></td>
+            <td class="num-cell">4–3</td>
+            <td class="num-cell">.571</td>
+            <td class="num-cell">1,111.8</td>
+            <td class="num-cell diff-pos">+124.2</td>
+            <td><span class="medal">#4 ’26</span></td>
+          </tr>
+          <tr>
+            <td class="rank">5</td>
+            <td class="team-cell"><div class="nm">NOSE TACKLE</div><div class="ow">Blainefry</div></td>
+            <td class="num-cell">19–16</td>
+            <td class="num-cell">.543</td>
+            <td class="num-cell">5,472.7</td>
+            <td class="num-cell diff-pos">+79.5</td>
+            <td><span class="medal">5th ’24 · 🥈 ’25 · #2 ’26</span></td>
+          </tr>
+          <tr>
+            <td class="rank">6</td>
+            <td class="team-cell"><div class="nm">carterwharton</div><div class="ow"></div></td>
+            <td class="num-cell">19–16</td>
+            <td class="num-cell">.543</td>
+            <td class="num-cell">4,874.0</td>
+            <td class="num-cell diff-pos">+37.5</td>
+            <td><span class="medal">🥈 ’24 · 8th ’25 · #1 ’26</span></td>
+          </tr>
+          <tr>
+            <td class="rank">7</td>
+            <td class="team-cell"><div class="nm">markysharky123</div><div class="ow"></div></td>
+            <td class="num-cell">18–19</td>
+            <td class="num-cell">.486</td>
+            <td class="num-cell">5,093.5</td>
+            <td class="num-cell diff-neg">−161.3</td>
+            <td><span class="medal">🥉 ’24 · 🥉 ’25 · #7 ’26</span></td>
+          </tr>
+          <tr class="muted">
+            <td class="rank">8</td>
+            <td class="team-cell"><div class="nm">DaddyDrew / BlainesDaddy<span class="badge former">FORMER</span></div><div class="ow">DaddyDrewsta · former member</div></td>
+            <td class="num-cell">12–14</td>
+            <td class="num-cell">.462</td>
+            <td class="num-cell">3,819.6</td>
+            <td class="num-cell diff-neg">−190.9</td>
+            <td><span class="medal">6th ’24 · 6th ’25</span></td>
+          </tr>
+          <tr>
+            <td class="rank">9</td>
+            <td class="team-cell"><div class="nm">ScoobyDoobyRuby</div><div class="ow"></div></td>
+            <td class="num-cell">13–20</td>
+            <td class="num-cell">.394</td>
+            <td class="num-cell">4,814.4</td>
+            <td class="num-cell diff-neg">−368.2</td>
+            <td><span class="medal">7th ’24 · 5th ’25 · #5 ’26</span></td>
+          </tr>
+          <tr>
+            <td class="rank">10</td>
+            <td class="team-cell"><div class="nm">DeloresBitesKneecaps<span class="badge new">NEW ’26</span></div><div class="ow">rl32</div></td>
+            <td class="num-cell">2–5</td>
+            <td class="num-cell">.286</td>
+            <td class="num-cell">977.9</td>
+            <td class="num-cell diff-neg">−137.4</td>
+            <td><span class="medal">#9 ’26</span></td>
+          </tr>
+          <tr>
+            <td class="rank">11</td>
+            <td class="team-cell"><div class="nm">Quadfather325</div><div class="ow"></div></td>
+            <td class="num-cell">8–25</td>
+            <td class="num-cell">.242</td>
+            <td class="num-cell">4,766.8</td>
+            <td class="num-cell diff-neg">−495.9</td>
+            <td><span class="medal">8th ’24 · 7th ’25 · #10 ’26</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="tablenote">Finishes show final placement for completed seasons and current standing (#) for 2026. Records count playoff and third-place games; 4 of 8 teams reached the playoffs in 2024 and 2025. New members have only seven games on file, so treat their rankings as a small sample.</p>
+    </div>
+  </div>
+</section>
+
+<section id="seasons">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="kicker">Exhibit D</div>
+      <h2>Season Files</h2>
+      <p>Final top-four results for completed seasons, and the current top four for 2026.</p>
+    </div>
+    <div class="season-grid">
+      <div class="season-card reveal">
+        <div class="tab"><span>FILE NO. 2024-01</span><span>8 TEAMS</span></div>
+        <h3>2024 Season</h3>
+        <ul class="placement">
+          <li><span class="p-rank">1ST</span><span class="p-team">Amon-YaMothasDaughter (yseeK)</span><span class="p-rec">11-2</span></li>
+          <li><span class="p-rank">2ND</span><span class="p-team">carterwharton</span><span class="p-rec">8-5</span></li>
+          <li><span class="p-rank">3RD</span><span class="p-team">markysharky123</span><span class="p-rec">7-6</span></li>
+          <li><span class="p-rank">4TH</span><span class="p-team">Mahomies n I Hate Blaine</span><span class="p-rec">9-4</span></li>
+        </ul>
+        <div class="season-blurb">The founding season. yseeK led the league at 11-2 and won the title. iTickleFatKidz posted the second-best record (9-4) but lost in the semifinals to carterwharton, then lost the third-place game.</div>
+      </div>
+      <div class="season-card reveal">
+        <div class="tab"><span>FILE NO. 2025-01</span><span>8 TEAMS</span></div>
+        <h3>2025 Season</h3>
+        <ul class="placement">
+          <li><span class="p-rank">1ST</span><span class="p-team">Mahomies n I Hate Blaine</span><span class="p-rec">11-2</span></li>
+          <li><span class="p-rank">2ND</span><span class="p-team">Roger Goodell (Blainefry)</span><span class="p-rec">7-6</span></li>
+          <li><span class="p-rank">3RD</span><span class="p-team">markysharky123</span><span class="p-rec">6-7</span></li>
+          <li><span class="p-rank">4TH</span><span class="p-team">Pablo Sanchez (yseeK)</span><span class="p-rec">7-6</span></li>
+        </ul>
+        <div class="season-blurb">The revenge tour. iTickleFatKidz matched the league's best record (11-2) with an all-time high 2,618.84 points and beat Blainefry in the final. The reigning champ, yseeK, fell to fourth.</div>
+      </div>
+      <div class="season-card live reveal">
+        <div class="tab"><span>FILE NO. 2026-01</span><span>WEEK 7</span></div>
+        <h3>2026 Season</h3>
+        <ul class="placement"><li><span class="p-rank">1ST</span><span class="p-team">carterwharton</span><span class="p-rec">6-1</span></li><li><span class="p-rank">2ND</span><span class="p-team">NOSE TACKLE</span><span class="p-rec">5-2</span></li><li><span class="p-rank">3RD</span><span class="p-team">Outkast</span><span class="p-rec">5-2</span></li><li><span class="p-rank">4TH</span><span class="p-team">SharonCrabs</span><span class="p-rec">4-3</span></li></ul>
+        <div class="season-blurb">In progress. carterwharton leads at 6-1, with Blainefry and the debuting Capehart36 right behind at 5-2. Six regular-season weeks remain before the playoffs start in Week 14.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="awards">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="kicker">Exhibit E</div>
+      <h2>The Case File</h2>
+      <p>Superlatives, on the record.</p>
+    </div>
+    <div class="award-grid">
+      <div class="award-card reveal">
+        <div class="tag">Best All-Time Record &middot; min. 2 seasons</div>
+        <h4>The Dynasty in Progress</h4>
+        <div class="who">DUIng blaines mom — JClark228 · fka iTickleFatKidz</div>
+        <div class="stat-line">25–12</div>
+        <p class="blurb">A .676 win rate including playoffs and a +902.3 point differential, the biggest on file by a wide margin &mdash; even with a slow start to 2026.</p>
+      </div>
+      <div class="award-card reveal">
+        <div class="tag">Worst All-Time Record</div>
+        <h4>The Rebuild</h4>
+        <div class="who">Quadfather325</div>
+        <div class="stat-line">8–25</div>
+        <p class="blurb">A .242 win rate across three seasons. Last in 2024, seventh in 2025, and sitting at 1-6 with six straight losses in 2026.</p>
+      </div>
+      <div class="award-card reveal">
+        <div class="tag">Hottest Team</div>
+        <h4>The Comeback Kid</h4>
+        <div class="who">carterwharton</div>
+        <div class="stat-line">6 straight W</div>
+        <p class="blurb">Went 4-9 and finished last in 2025, now 6-1 with the fewest points allowed in the league (876.80).</p>
+      </div>
+      <div class="award-card reveal">
+        <div class="tag">Rookie Standout</div>
+        <h4>The New Blood</h4>
+        <div class="who">Capehart36 &mdash; Outkast</div>
+        <div class="stat-line">5&ndash;2</div>
+        <p class="blurb">Best record among the three new franchises and currently third in the standings, inside the playoff line in a debut season.</p>
+      </div>
+      <div class="award-card reveal">
+        <div class="tag">Defending Champ Watch</div>
+        <h4>The Hangover, Part II</h4>
+        <div class="who">JClark228 &mdash; DUIng blaines mom</div>
+        <div class="stat-line">3&ndash;4</div>
+        <p class="blurb">Dropped three straight despite scoring 1,148.74 points, the second most in the league. The record says slump; the scoreboard says bad luck.</p>
+      </div>
+      <div class="award-card reveal">
+        <div class="tag">Title Defense Flop</div>
+        <h4>The Hangover</h4>
+        <div class="who">yseeK</div>
+        <div class="stat-line">1st &rarr; 4th</div>
+        <p class="blurb">Went from the 2024 title to a fourth-place finish in 2025, and is 2-5 so far in 2026.</p>
+      </div>
+      <div class="award-card reveal">
+        <div class="tag">Fourth to First</div>
+        <h4>The Turnaround</h4>
+        <div class="who">iTickleFatKidz</div>
+        <div class="stat-line">4th &rarr; 1st</div>
+        <p class="blurb">Lost the 2024 third-place game, then won the whole thing in 2025 with the highest-scoring season on record.</p>
+      </div>
+      <div class="award-card reveal">
+        <div class="tag">Bronze Standard</div>
+        <h4>Mr. Consistent</h4>
+        <div class="who">markysharky123</div>
+        <div class="stat-line">3rd &middot; 3rd</div>
+        <p class="blurb">The only owner to reach the top three in both completed seasons: third place, twice. (DaddyDrewsta also repeated a finish &mdash; sixth, twice.) Currently 3-4 in 2026.</p>
+      </div>
+      <div class="award-card reveal">
+        <div class="tag">Single-Season High</div>
+        <h4>The Explosion</h4>
+        <div class="who">iTickleFatKidz &mdash; 2025</div>
+        <div class="stat-line">2,618.84 pts</div>
+        <p class="blurb">The most points in a completed season, on the way to the 2025 title.</p>
+      </div>
+      <div class="award-card reveal">
+        <div class="tag">Low-Score Watch</div>
+        <h4>The Ice Age</h4>
+        <div class="who">Quadfather325 &mdash; 2025 record, 2026 pace</div>
+        <div class="stat-line">1,797.04 pts</div>
+        <p class="blurb">The lowest completed season on file. Through Week 7 of 2026, Quadfather325 has scored 891.16, which projects to roughly 1,655 over 13 games &mdash; on pace to break their own record.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="seal">LEAGUE<br>OFFICE<br>SEAL</div>
+  <p>Certified accurate per league records on file, 2024 &ndash; Week 7 of 2026.</p>
+  <p class="small">Compiled from Sleeper league data. Last updated October 27, 2026.</p>
+</footer>
+
+<script>
+  const els = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold:0.12 });
+    els.forEach(el=>io.observe(el));
+  } else {
+    els.forEach(el=>el.classList.add('in'));
+  }
+</script>
+
+</body>
+</html>
